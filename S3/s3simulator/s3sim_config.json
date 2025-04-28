@@ -1,0 +1,5 @@
+{
+    "endpoint_url": "http://localhost:5000",
+    "region": "us-east-1",
+    "default_user_id": "test_user"
+}

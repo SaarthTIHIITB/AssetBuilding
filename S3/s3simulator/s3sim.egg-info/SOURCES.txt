@@ -1,0 +1,12 @@
+README.md
+setup.py
+s3sim/__init__.py
+s3sim/s3_operations.py
+s3sim.egg-info/PKG-INFO
+s3sim.egg-info/SOURCES.txt
+s3sim.egg-info/dependency_links.txt
+s3sim.egg-info/entry_points.txt
+s3sim.egg-info/requires.txt
+s3sim.egg-info/top_level.txt
+s3sim/tests/__init__.py
+s3sim/tests/test_s3_operations.py
