@@ -1,7 +1,13 @@
+"""
+S3 Operations Module
+
+This module provides CRUD operations for AWS S3, configurable to work with either
+real AWS S3 or the Moto S3 simulator via an endpoint URL environment variable.
+"""
+
 import boto3
 import os
 import logging
-import json
 from botocore.exceptions import ClientError
 
 # Configure logging
@@ -11,23 +17,15 @@ logger = logging.getLogger(__name__)
 def get_s3_client():
     """
     Create and return an S3 client configured based on environment variables.
-    Automatically handles SSL based on whether the local emulator is used or AWS is used.
     
     Returns:
         boto3.client: Configured S3 client
     """
-    # Get endpoint URL from environment variable (None for real AWS)
+    # Get endpoint URL from environment variable (None for real S3)
     endpoint_url = os.environ.get('S3_ENDPOINT_URL', None)
     
-    # Check if we are using a local emulator by checking the endpoint URL (typically 'http://localhost:5000')
-    if endpoint_url and 'localhost' in endpoint_url:
-        # Disable SSL verification when using a local emulator
-        s3_client = boto3.client('s3', endpoint_url=endpoint_url, verify=False)
-    else:
-        # Use SSL verification when connecting to AWS S3
-        s3_client = boto3.client('s3', endpoint_url=endpoint_url, verify=True)
-    
-    return s3_client
+    # Create S3 client with optional endpoint URL
+    return boto3.client('s3', endpoint_url=endpoint_url)
 
 def create_bucket(bucket_name, region=None):
     """
@@ -45,7 +43,7 @@ def create_bucket(bucket_name, region=None):
     try:
         # Different approach needed depending on if we're using Moto or real AWS
         if os.environ.get('S3_ENDPOINT_URL'):
-            # Simplified for Moto (local emulator)
+            # Simplified for Moto
             s3_client.create_bucket(Bucket=bucket_name)
         else:
             # For real AWS, handle region configuration
@@ -241,7 +239,15 @@ def delete_bucket(bucket_name, force=False):
         logger.error(f"Error deleting bucket '{bucket_name}': {e}")
         return False
 
-# Upload a large file with multipart support
+def get_s3_client(endpoint_url=None):
+    return boto3.client(
+        's3',
+        aws_access_key_id="test",
+        aws_secret_access_key="test",
+        endpoint_url=endpoint_url,
+        region_name="us-east-1"
+    )
+
 def upload_large_file(file_path, bucket_name, object_name, endpoint_url=None):
     s3_client = get_s3_client(endpoint_url)
     config = boto3.s3.transfer.TransferConfig(
@@ -260,20 +266,12 @@ def upload_large_file(file_path, bucket_name, object_name, endpoint_url=None):
     except Exception as e:
         print(f"Upload failed: {e}")
 
-def load_config_from_file(config_file='config.json'):
-    """
-    Load configuration from a JSON file.
-    
-    Args:
-        config_file (str): Path to the configuration file (defaults to 'config.json')
-    
-    Returns:
-        dict: Loaded configuration as a dictionary
-    """
+def create_bucket(bucket_name, endpoint_url=None):
+    s3_client = get_s3_client(endpoint_url)
     try:
-        with open(config_file, 'r') as file:
-            config = json.load(file)
-            return config
+        s3_client.create_bucket(Bucket=bucket_name)
+        print(f"Bucket {bucket_name} created successfully.")
+    except s3_client.exceptions.BucketAlreadyOwnedByYou:
+        print(f"Bucket {bucket_name} already exists.")
     except Exception as e:
-        print(f"Error loading config file: {e}")
-        return {}
+        print(f"Bucket creation failed: {e}")
